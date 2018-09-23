@@ -1,0 +1,16 @@
+package:
+  name: peer
+  version: "0.0.1"
+
+requirements:
+  build:
+    - python
+    - setuptools
+
+  run:
+    - python =>3.6
+
+about:
+  home: https://github.com/tomcusack1/peer
+  license: GPL-2.0
+  summary: 'A Python Implementation of a P2P Network'
