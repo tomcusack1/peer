@@ -15,28 +15,29 @@ class Server:
             s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             s.bind(('127.0.0.1', 10001))
             s.listen(5)
-            #logging.info('Successfully started the server on port 10000.')
+            logging.info('Successfully started the server on port 10001.')
 
             while True:
                 c, a = s.accept()
-                #logging.info('New client node joins pool.')
+                logging.info('New client node joins pool.')
                 t = threading.Thread(target=self.handler, args=(c, a), daemon=True).start()
                 self.connections.append(c)
                 self.peers.append(a[0])
-                #logging.info('New node connected: {}:{}'.format(str(a[0]), str(a[1])))
+                logging.info('New node connected: {}:{}'.format(str(a[0]), str(a[1])))
                 self.send_peers()
 
     def handler(self, c, a):
         while True:
-            #logging.info('Waiting for connections..')
             data = c.recv(5120)
-            #logging.info('Sending data: {}'.format(data.decode()))
+
+            logging.info('Broadcasting received data to all connected nodes: {}'.format(data.decode()))
+            logging.info('Message: {}'.format(data.decode()))
 
             for connection in self.connections:
                 connection.sendall(data)
 
             if not data:
-                #logging.info('Node disconnected: {}:{}'.format(str(a[0]), str(a[1])))
+                logging.info('Node disconnected: {}:{}'.format(str(a[0]), str(a[1])))
                 self.connections.remove(c)
                 self.peers.remove(a[0])
                 c.close()
@@ -44,7 +45,10 @@ class Server:
                 break
 
     def send_peers(self):
-        """Sends the list of peers in the swarm to all connected peers."""
+        """Sends the list of peers in the swarm to all connected peers.
+
+        We prefix the message with '\x11' so the clients know it is a Routing Table refresh.
+        """
         p = ''
 
         for peer in self.peers:
@@ -59,7 +63,6 @@ class Client:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             s.connect((address, 10001))
-            #logging.info('Successfully made a client connection at: {}. Listening..'.format(address))
 
             t = threading.Thread(target=self.send_message, args=(s,), daemon=True).start()
 
@@ -80,14 +83,11 @@ class Client:
     def send_message(s):
         """Sends a message to all connected nodes."""
         while True:
-            message = input('Enter message: ').encode()
-            s.sendall(message)
-            #logging.info('Sending message: {}'.format(message.decode()))
+            s.sendall(input('Enter message: ').encode())
 
     @staticmethod
     def update_peers(peer_data):
         """Refreshes the local copy of all connected nodes."""
-        #logging.info('Node dropped/connected. Updating connected peers list.')
         Tracker.peers = peer_data.split(',')[:-1]
 
 
